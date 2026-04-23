@@ -221,7 +221,6 @@
 <script>
     // --- 설정 및 데이터 ---
     const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzGj7y_4jvrRp6DkC79xo1k0z_jsS_GL3_K1Qxi9F9mmYc-b-FbYPN4ZQFnYo5uowCO/exec"; 
-    // 실제 운영시에는 위 URL에 Google Apps Script 배포 URL을 넣어야 합니다.
     
     let reservations = []; // 로컬 캐시 (중복 확인용)
     const rooms = ["1호실", "2호실"];
@@ -246,7 +245,7 @@
     window.onload = () => {
         setupForm();
         renderCalendar();
-        loadReservations(); // 초기 데이터 로드 (시뮬레이션)
+        loadReservations(); // 초기 데이터 로드
     };
 
     function setupForm() {
@@ -306,8 +305,7 @@
 
     // --- 데이터 관리 ---
     function loadReservations() {
-        // 실제로는 fetch(GOOGLE_SHEET_API_URL) 등을 통해 가져와야 함
-        // 여기서는 시뮬레이션을 위해 localStorage 사용
+        // 로컬 스토리지에서 기존 데이터를 불러와 캘린더에 표시
         const stored = localStorage.getItem('mlab_reservations');
         if (stored) {
             reservations = JSON.parse(stored);
@@ -374,24 +372,22 @@
             document.getElementById('submit-btn').disabled = true;
             document.getElementById('submit-btn').innerText = '처리 중...';
 
-            // A. 로컬 저장 (데모용)
+            // A. 로컬 저장
             reservations.push(resData);
             localStorage.setItem('mlab_reservations', JSON.stringify(reservations));
 
-            // B. 구글 스프레드시트 전송 (선택 사항 - GAS 설정 필요)
-            /*
+            // B. 구글 스프레드시트 전송 (GAS API 호출)
             await fetch(GOOGLE_SHEET_API_URL, {
                 method: 'POST',
-                mode: 'no-cors',
+                mode: 'no-cors', // GAS 특성상 no-cors 모드로 전송
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(resData)
-            });
-            */
+            });            
 
             showStatus('예약이 성공적으로 완료되었습니다!', 'success');
             updateCalendarContent();
             document.getElementById('reservation-form').reset();
-            setupForm(); // 날짜 리셋 방지
+            setupForm(); // 날짜 입력 범위 재설정
         } catch (err) {
             showStatus('저장 중 오류가 발생했습니다.', 'error');
         } finally {
