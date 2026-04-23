@@ -166,7 +166,6 @@
     </header>
 
     <div class="main-layout">
-        <!-- 캘린더 -->
         <div class="card">
             <div class="calendar-header">
                 <div>
@@ -181,7 +180,6 @@
             <div class="calendar-grid" id="calendar-grid"></div>
         </div>
 
-        <!-- 예약 폼 -->
         <div class="card">
             <h3>예약하기</h3>
             <form id="reservation-form">
@@ -216,8 +214,9 @@
 </div>
 
 <script>
-    //const API_URL = "https://script.google.com/macros/s/AKfycbzGj7y_4jvrRp6DkC79xo1k0z_jsS_GL3_K1Qxi9F9mmYc-b-FbYPN4ZQFnYo5uowCO/exec"; 
-    const API_URL = "https://script.google.com/macros/s/AKfycbzGj7y_4jvrRp6DkC79xo1k0z_jsS_GL3_K1Qxi9F9mmYc-b-FbYPN4ZQFnYo5uowCO/exec";
+    // ⚠️ 중요: GAS 배포 후 생성된 최신 URL로 교체하세요.
+    const API_URL = "https://script.google.com/macros/s/AKfycbzGj7y_4jvrRp6DkC79xo1k0z_jsS_GL3_K1Qxi9F9mmYc-b-FbYPN4ZQFnYo5uowCO/exec"; 
+    
     let reservations = [];
     const businessHours = { start: 9, end: 20 };
 
@@ -244,6 +243,7 @@
         setupForm();
         renderCalendar();
         loadLocalData();
+        fetchReservations(); // 페이지 로드 시 시트에서 데이터 가져오기
     };
 
     function setupForm() {
@@ -308,28 +308,25 @@
         }
     }
 
-    // [추가 기능] 스프레드시트에서 데이터 가져오기
     async function fetchReservations() {
         const btn = document.getElementById('sync-btn');
         const originalText = btn.innerText;
         try {
             btn.disabled = true;
-            btn.innerText = '⏳ 불러오는 중...';
+            btn.innerText = '⏳ 데이터 동기화 중...';
 
-            const response = await fetch(API_URL);
-            if (!response.ok) throw new Error('Network response was not ok');
+            const response = await fetch(`${API_URL}?t=${Date.now()}`);
+            if (!response.ok) throw new Error();
             
             const data = await response.json();
-            
-            // 가져온 데이터로 로컬 상태 및 저장소 업데이트
-            reservations = data;
-            localStorage.setItem('mlab_res_v2', JSON.stringify(reservations));
-            
-            updateUI();
-            showMsg('시트와 동기화되었습니다.', 'success');
+            if (Array.isArray(data)) {
+                reservations = data;
+                localStorage.setItem('mlab_res_v2', JSON.stringify(reservations));
+                updateUI();
+                showMsg('시트 데이터를 불러왔습니다.', 'success');
+            }
         } catch (err) {
-            console.error(err);
-            showMsg('동기화 실패. GAS에 doGet 설정이 필요합니다.', 'error');
+            showMsg('동기화 실패: GAS 권한 설정을 확인하세요.', 'error');
         } finally {
             btn.disabled = false;
             btn.innerText = originalText;
@@ -364,7 +361,7 @@
         };
 
         if (resData.startTime >= resData.endTime) {
-            showMsg('종료 시간이 시작 시간보다 빨라요!', 'error');
+            showMsg('종료 시간을 확인하세요!', 'error');
             return;
         }
 
@@ -381,23 +378,26 @@
 
         try {
             btn.disabled = true;
-            btn.innerText = '저장 중...';
+            btn.innerText = '전송 중...';
 
-            reservations.push(resData);
-            localStorage.setItem('mlab_res_v2', JSON.stringify(reservations));
-
+            // GAS로 데이터 전송 (no-cors 모드)
             await fetch(API_URL, {
                 method: 'POST',
                 mode: 'no-cors',
+                cache: 'no-cache',
                 body: JSON.stringify(resData)
             });
 
-            showMsg('예약이 완료되었습니다!', 'success');
-            updateUI();
-            document.getElementById('reservation-form').reset();
-            setupForm();
+            showMsg('예약 신청 완료! 잠시 후 시트와 동기화됩니다.', 'success');
+            
+            // 전송 후 데이터 동기화 지연 실행
+            setTimeout(() => {
+                fetchReservations();
+                document.getElementById('reservation-form').reset();
+            }, 1500);
+
         } catch (err) {
-            showMsg('오류가 발생했습니다.', 'error');
+            showMsg('서버 전송 오류가 발생했습니다.', 'error');
         } finally {
             btn.disabled = false;
             btn.innerText = '예약 신청';
@@ -409,7 +409,7 @@
         el.innerText = m;
         el.className = `message ${t}`;
         el.style.display = 'block';
-        setTimeout(() => el.style.display = 'none', 4000);
+        setTimeout(() => el.style.display = 'none', 5000);
     }
 </script>
 
