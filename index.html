@@ -72,9 +72,9 @@
 
         .calendar-cell {
             border: 0.5px solid var(--border);
-            min-height: 70px;
+            min-height: 80px;
             padding: 4px;
-            font-size: 12px;
+            font-size: 11px;
             position: relative;
         }
 
@@ -97,15 +97,15 @@
 
         .reservation-block {
             border-radius: 4px;
-            padding: 3px 6px;
+            padding: 4px 6px;
             margin-bottom: 3px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
             font-size: 11px;
-            font-weight: 500;
-            cursor: pointer;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            font-weight: 700;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            line-height: 1.2;
         }
 
         .room1-block { background-color: var(--room1); color: var(--room1-text); border-left: 3px solid var(--primary); }
@@ -214,7 +214,6 @@
 </div>
 
 <script>
-    // ⚠️ 중요: GAS 배포 후 생성된 최신 URL로 교체하세요.
     const API_URL = "https://script.google.com/macros/s/AKfycbzGj7y_4jvrRp6DkC79xo1k0z_jsS_GL3_K1Qxi9F9mmYc-b-FbYPN4ZQFnYo5uowCO/exec"; 
     
     let reservations = [];
@@ -243,7 +242,7 @@
         setupForm();
         renderCalendar();
         loadLocalData();
-        fetchReservations(); // 페이지 로드 시 시트에서 데이터 가져오기
+        fetchReservations(); 
     };
 
     function setupForm() {
@@ -301,10 +300,12 @@
     }
 
     function loadLocalData() {
-        const data = localStorage.getItem('mlab_res_v2');
+        const data = localStorage.getItem('mlab_res_cache');
         if (data) {
-            reservations = JSON.parse(data);
-            updateUI();
+            try {
+                reservations = JSON.parse(data);
+                updateUI();
+            } catch(e) { reservations = []; }
         }
     }
 
@@ -313,20 +314,23 @@
         const originalText = btn.innerText;
         try {
             btn.disabled = true;
-            btn.innerText = '⏳ 데이터 동기화 중...';
+            btn.innerText = '⏳ 동기화 중...';
 
             const response = await fetch(`${API_URL}?t=${Date.now()}`);
-            if (!response.ok) throw new Error();
+            if (!response.ok) throw new Error('Network error');
             
             const data = await response.json();
+            if (data.error) throw new Error(data.error);
+
             if (Array.isArray(data)) {
                 reservations = data;
-                localStorage.setItem('mlab_res_v2', JSON.stringify(reservations));
+                localStorage.setItem('mlab_res_cache', JSON.stringify(reservations));
                 updateUI();
-                showMsg('시트 데이터를 불러왔습니다.', 'success');
+                showMsg('데이터를 성공적으로 불러왔습니다.', 'success');
             }
         } catch (err) {
-            showMsg('동기화 실패: GAS 권한 설정을 확인하세요.', 'error');
+            console.error('Fetch error:', err);
+            showMsg('동기화 실패: GAS 배포 권한(Anyone) 및 승인 여부를 확인하세요.', 'error');
         } finally {
             btn.disabled = false;
             btn.innerText = originalText;
@@ -335,13 +339,17 @@
 
     function updateUI() {
         document.querySelectorAll('.reservation-block').forEach(el => el.remove());
+
         reservations.forEach(res => {
+            // 시간 데이터에서 '시(Hour)' 추출 (09:00 -> 9)
             const h = parseInt(res.startTime.split(':')[0]);
             const cell = document.getElementById(`cell-${res.date}-${h}`);
+            
             if (cell) {
                 const block = document.createElement('div');
-                block.className = `reservation-block ${res.room === '1호실' ? 'room1-block' : 'room2-block'}`;
+                block.className = `reservation-block ${res.room.includes('1') ? 'room1-block' : 'room2-block'}`;
                 block.innerText = `${res.room.replace('호실','')}:${res.name}`;
+                block.title = `${res.name} (${res.startTime}~${res.endTime})`;
                 cell.appendChild(block);
             }
         });
@@ -360,11 +368,6 @@
             timestamp: new Date().toLocaleString('ko-KR')
         };
 
-        if (resData.startTime >= resData.endTime) {
-            showMsg('종료 시간을 확인하세요!', 'error');
-            return;
-        }
-
         const conflict = reservations.some(r => 
             r.date === resData.date && r.room === resData.room && 
             ((resData.startTime >= r.startTime && resData.startTime < r.endTime) || 
@@ -380,24 +383,22 @@
             btn.disabled = true;
             btn.innerText = '전송 중...';
 
-            // GAS로 데이터 전송 (no-cors 모드)
             await fetch(API_URL, {
                 method: 'POST',
                 mode: 'no-cors',
-                cache: 'no-cache',
                 body: JSON.stringify(resData)
             });
 
-            showMsg('예약 신청 완료! 잠시 후 시트와 동기화됩니다.', 'success');
+            showMsg('예약이 신청되었습니다. 잠시 후 동기화됩니다.', 'success');
             
-            // 전송 후 데이터 동기화 지연 실행
             setTimeout(() => {
                 fetchReservations();
                 document.getElementById('reservation-form').reset();
-            }, 1500);
+                setupForm();
+            }, 2500);
 
         } catch (err) {
-            showMsg('서버 전송 오류가 발생했습니다.', 'error');
+            showMsg('오류가 발생했습니다.', 'error');
         } finally {
             btn.disabled = false;
             btn.innerText = '예약 신청';
