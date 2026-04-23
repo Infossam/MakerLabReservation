@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메이커랩 회의실 예약</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --bg-gray: #f8fafc;
+            --border: #e2e8f0;
+            --room1: #dbeafe;
+            --room1-text: #1e40af;
+            --room2: #dcfce7;
+            --room2-text: #166534;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-gray);
+            margin: 0;
+            padding: 20px;
+            color: #1e293b;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 캘린더 스타일 */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: 80px repeat(7, 1fr);
+            border: 1px solid var(--border);
+        }
+
+        .calendar-cell {
+            border: 0.5px solid var(--border);
+            min-height: 50px;
+            padding: 5px;
+            font-size: 12px;
+            position: relative;
+        }
+
+        .cell-header {
+            background: #f1f5f9;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .time-col {
+            background: #f1f5f9;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .reservation-block {
+            border-radius: 4px;
+            padding: 2px 4px;
+            margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .room1-block { background-color: var(--room1); color: var(--room1-text); border-left: 3px solid var(--primary); }
+        .room2-block { background-color: var(--room2); color: var(--room2-text); border-left: 3px solid #22c55e; }
+
+        /* 예약 폼 스타일 */
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            display: none;
+        }
+
+        .error { background-color: #fee2e2; color: #991b1b; display: block; }
+        .success { background-color: #dcfce7; color: #166534; display: block; }
+
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 12px; height: 12px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Maker Lab 회의실 예약</h1>
+        <p>효율적인 협업을 위한 메이커랩 공간 예약 시스템</p>
+    </header>
+
+    <div class="main-layout">
+        <!-- 캘린더 영역 -->
+        <div class="card">
+            <div class="calendar-header">
+                <h3 id="current-week-range">이번 주 예약 현황</h3>
+                <div class="legend">
+                    <div class="legend-item"><div class="dot" style="background: var(--primary)"></div>1호실</div>
+                    <div class="legend-item"><div class="dot" style="background: #22c55e"></div>2호실</div>
+                </div>
+            </div>
+            <div class="calendar-grid" id="calendar-grid">
+                <!-- JS에서 생성 -->
+            </div>
+        </div>
+
+        <!-- 예약 폼 영역 -->
+        <div class="card">
+            <h3>예약하기</h3>
+            <form id="reservation-form">
+                <div class="form-group">
+                    <label for="user-name">예약자명</label>
+                    <input type="text" id="user-name" placeholder="이름을 입력하세요" required>
+                </div>
+                <div class="form-group">
+                    <label for="room-select">회의실 선택</label>
+                    <select id="room-select" required>
+                        <option value="1호실">1호실</option>
+                        <option value="2호실">2호실</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="res-date">날짜 선택</label>
+                    <input type="date" id="res-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="start-time">시작 시간</label>
+                    <select id="start-time" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="end-time">종료 시간</label>
+                    <select id="end-time" required></select>
+                </div>
+                <button type="submit" id="submit-btn">예약 신청</button>
+            </form>
+            <div id="status-msg" class="message"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- 설정 및 데이터 ---
+    const GOOGLE_SHEET_API_URL = "https://script.google.com/macros/s/AKfycbzGj7y_4jvrRp6DkC79xo1k0z_jsS_GL3_K1Qxi9F9mmYc-b-FbYPN4ZQFnYo5uowCO/exec"; 
+    // 실제 운영시에는 위 URL에 Google Apps Script 배포 URL을 넣어야 합니다.
+    
+    let reservations = []; // 로컬 캐시 (중복 확인용)
+    const rooms = ["1호실", "2호실"];
+    const businessHours = { start: 9, end: 20 }; // 09:00 ~ 20:00
+
+    // 날짜 관련 설정 (다음주 금요일까지 예약 가능)
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    
+    // 다음주 금요일 계산
+    function getNextWeekFriday() {
+        const d = new Date(today);
+        const day = d.getDay(); // 0(일) ~ 6(토)
+        // 이번주 금요일까지의 일수 + 7일
+        const daysUntilNextFriday = (5 - day + 7) % 7 + 7;
+        d.setDate(d.getDate() + daysUntilNextFriday);
+        return d;
+    }
+    const maxDate = getNextWeekFriday();
+
+    // --- 초기화 ---
+    window.onload = () => {
+        setupForm();
+        renderCalendar();
+        loadReservations(); // 초기 데이터 로드 (시뮬레이션)
+    };
+
+    function setupForm() {
+        const dateInput = document.getElementById('res-date');
+        dateInput.min = today.toISOString().split('T')[0];
+        dateInput.max = maxDate.toISOString().split('T')[0];
+
+        const startSelect = document.getElementById('start-time');
+        const endSelect = document.getElementById('end-time');
+
+        for (let i = businessHours.start; i < businessHours.end; i++) {
+            const timeStr = `${String(i).padStart(2, '0')}:00`;
+            startSelect.innerHTML += `<option value="${timeStr}">${timeStr}</option>`;
+            endSelect.innerHTML += `<option value="${String(i+1).padStart(2, '0')}:00">${String(i+1).padStart(2, '0')}:00</option>`;
+        }
+    }
+
+    // --- 달력 렌더링 ---
+    function renderCalendar() {
+        const grid = document.getElementById('calendar-grid');
+        grid.innerHTML = '';
+
+        // 헤더 생성 (시간축 + 이번주 7일)
+        grid.appendChild(createCell('', 'cell-header'));
+        const weekDates = [];
+        const curr = new Date(today);
+        const first = curr.getDate() - curr.getDay(); // 이번주 일요일
+
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(curr.setDate(first + i));
+            weekDates.push(new Date(d));
+            const dayName = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+            grid.appendChild(createCell(`${d.getMonth()+1}/${d.getDate()}(${dayName})`, 'cell-header'));
+        }
+
+        // 시간 행 생성
+        for (let h = businessHours.start; h < businessHours.end; h++) {
+            const timeStr = `${String(h).padStart(2, '0')}:00`;
+            grid.appendChild(createCell(timeStr, 'time-col'));
+
+            for (let i = 0; i < 7; i++) {
+                const dateStr = weekDates[i].toISOString().split('T')[0];
+                const cell = createCell('', 'calendar-cell');
+                cell.id = `cell-${dateStr}-${h}`;
+                grid.appendChild(cell);
+            }
+        }
+        updateCalendarContent();
+    }
+
+    function createCell(text, className) {
+        const div = document.createElement('div');
+        div.className = className;
+        div.innerText = text;
+        return div;
+    }
+
+    // --- 데이터 관리 ---
+    function loadReservations() {
+        // 실제로는 fetch(GOOGLE_SHEET_API_URL) 등을 통해 가져와야 함
+        // 여기서는 시뮬레이션을 위해 localStorage 사용
+        const stored = localStorage.getItem('mlab_reservations');
+        if (stored) {
+            reservations = JSON.parse(stored);
+            updateCalendarContent();
+        }
+    }
+
+    function updateCalendarContent() {
+        // 기존 블록 제거
+        document.querySelectorAll('.reservation-block').forEach(el => el.remove());
+
+        reservations.forEach(res => {
+            const startHour = parseInt(res.startTime.split(':')[0]);
+            const endHour = parseInt(res.endTime.split(':')[0]);
+            
+            const cell = document.getElementById(`cell-${res.date}-${startHour}`);
+            if (cell) {
+                const block = document.createElement('div');
+                block.className = `reservation-block ${res.room === '1호실' ? 'room1-block' : 'room2-block'}`;
+                block.innerText = `${res.room} - ${res.name}`;
+                block.title = `${res.name} (${res.startTime}~${res.endTime})`;
+                cell.appendChild(block);
+            }
+        });
+    }
+
+    // --- 예약 로직 ---
+    document.getElementById('reservation-form').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const resData = {
+            name: document.getElementById('user-name').value,
+            room: document.getElementById('room-select').value,
+            date: document.getElementById('res-date').value,
+            startTime: document.getElementById('start-time').value,
+            endTime: document.getElementById('end-time').value,
+            timestamp: new Date().toISOString()
+        };
+
+        const statusMsg = document.getElementById('status-msg');
+        
+        // 1. 시간 유효성 체크
+        if (resData.startTime >= resData.endTime) {
+            showStatus('종료 시간은 시작 시간보다 늦어야 합니다.', 'error');
+            return;
+        }
+
+        // 2. 중복 체크
+        const isConflict = reservations.some(r => {
+            return r.date === resData.date && 
+                   r.room === resData.room && 
+                   ((resData.startTime >= r.startTime && resData.startTime < r.endTime) || 
+                    (resData.endTime > r.startTime && resData.endTime <= r.endTime) ||
+                    (resData.startTime <= r.startTime && resData.endTime >= r.endTime));
+        });
+
+        if (isConflict) {
+            showStatus('이미 해당 시간에 예약이 존재합니다.', 'error');
+            return;
+        }
+
+        // 3. 저장 진행
+        try {
+            document.getElementById('submit-btn').disabled = true;
+            document.getElementById('submit-btn').innerText = '처리 중...';
+
+            // A. 로컬 저장 (데모용)
+            reservations.push(resData);
+            localStorage.setItem('mlab_reservations', JSON.stringify(reservations));
+
+            // B. 구글 스프레드시트 전송 (선택 사항 - GAS 설정 필요)
+            /*
+            await fetch(GOOGLE_SHEET_API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(resData)
+            });
+            */
+
+            showStatus('예약이 성공적으로 완료되었습니다!', 'success');
+            updateCalendarContent();
+            document.getElementById('reservation-form').reset();
+            setupForm(); // 날짜 리셋 방지
+        } catch (err) {
+            showStatus('저장 중 오류가 발생했습니다.', 'error');
+        } finally {
+            document.getElementById('submit-btn').disabled = false;
+            document.getElementById('submit-btn').innerText = '예약 신청';
+        }
+    };
+
+    function showStatus(msg, type) {
+        const el = document.getElementById('status-msg');
+        el.innerText = msg;
+        el.className = `message ${type}`;
+        setTimeout(() => { el.className = 'message'; }, 4000);
+    }
+</script>
+
+</body>
+</html>
