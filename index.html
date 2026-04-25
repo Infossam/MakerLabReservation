@@ -311,22 +311,37 @@
         }
     }
 
-    function updateUI() {
-        document.querySelectorAll('.reservation-block').forEach(el => el.remove());
-        reservations.forEach(res => {
-            if (!res.startTime || !res.date) return;
-            const h = parseInt(res.startTime.split(':')[0]);
-            const cleanDate = res.date.split('T')[0]; 
-            const cell = document.getElementById(`cell-${cleanDate}-${h}`);
-            
-            if (cell) {
-                const block = document.createElement('div');
-                block.className = `reservation-block ${res.room.includes('1') ? 'room1-block' : 'room2-block'}`;
-                block.innerText = `${res.room.replace('호실','')}: ${res.name}`;
-                cell.appendChild(block);
-            }
-        });
-    }
+// index.html의 updateUI 함수 부분만 이 내용으로 교체하거나 전체를 새로고침 하세요.
+function updateUI() {
+    // 1. 기존 예약 블록 싹 지우기
+    document.querySelectorAll('.reservation-block').forEach(el => el.remove());
+    
+    // 2. 디버깅용 로그 (F12 눌러서 데이터가 어떻게 들어오는지 확인!)
+    console.log("매칭 시작! 현재 데이터:");
+    console.table(reservations);
+
+    reservations.forEach(res => {
+        if (!res.startTime || !res.date) return;
+
+        // 시간에서 '9' 또는 '09' 추출
+        const h = parseInt(res.startTime.split(':')[0]);
+        // 날짜에서 '2026-04-25' 추출
+        const cleanDate = res.date.trim(); 
+        
+        const targetId = `cell-${cleanDate}-${h}`;
+        const cell = document.getElementById(targetId);
+        
+        if (cell) {
+            const block = document.createElement('div');
+            block.className = `reservation-block ${res.room.includes('1') ? 'room1-block' : 'room2-block'}`;
+            block.innerText = `${res.room.replace('호실','')}: ${res.name}`;
+            cell.appendChild(block);
+        } else {
+            // 매칭 실패 시 왜 실패했는지 로그 남기기
+            console.warn(`매칭 실패: ID가 ${targetId}인 칸을 찾을 수 없음`);
+        }
+    });
+}
 
     document.getElementById('reservation-form').onsubmit = async (e) => {
         e.preventDefault();
