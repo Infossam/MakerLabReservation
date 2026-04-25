@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>메이커랩 회의실 예약</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📅</text></svg>">
     <style>
         :root {
             --primary: #2563eb;
@@ -20,36 +21,28 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             background-color: var(--bg-gray);
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             color: #1e293b;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 20px; }
+        header h1 { margin: 10px 0; color: #0f172a; }
 
         .main-layout {
             display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 20px;
+            grid-template-columns: 1fr 320px;
+            gap: 15px;
         }
 
         @media (max-width: 900px) {
-            .main-layout {
-                grid-template-columns: 1fr;
-            }
+            .main-layout { grid-template-columns: 1fr; }
         }
 
         .card {
             background: white;
             border-radius: 12px;
-            padding: 20px;
+            padding: 15px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             border: 1px solid var(--border);
         }
@@ -58,21 +51,22 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             flex-wrap: wrap;
             gap: 10px;
         }
 
         .calendar-grid {
             display: grid;
-            grid-template-columns: 80px repeat(7, 1fr);
+            grid-template-columns: 60px repeat(7, 1fr);
             border: 1px solid var(--border);
-            background: white;
+            background: #eee;
+            gap: 1px;
         }
 
         .calendar-cell {
-            border: 0.5px solid var(--border);
-            min-height: 80px;
+            background: white;
+            min-height: 85px;
             padding: 4px;
             font-size: 11px;
             position: relative;
@@ -82,8 +76,9 @@
             background: #f1f5f9;
             font-weight: bold;
             text-align: center;
-            padding: 12px 0;
-            border: 0.5px solid var(--border);
+            padding: 10px 0;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border);
         }
 
         .time-col {
@@ -92,7 +87,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 0.5px solid var(--border);
         }
 
         .reservation-block {
@@ -103,17 +97,17 @@
             text-overflow: ellipsis;
             white-space: nowrap;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 800;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            line-height: 1.2;
+            border-left: 3px solid transparent;
         }
 
-        .room1-block { background-color: var(--room1); color: var(--room1-text); border-left: 3px solid var(--primary); }
-        .room2-block { background-color: var(--room2); color: var(--room2-text); border-left: 3px solid #22c55e; }
+        .room1-block { background-color: var(--room1); color: var(--room1-text); border-left-color: var(--primary); }
+        .room2-block { background-color: var(--room2); color: var(--room2-text); border-left-color: #22c55e; }
 
-        .form-group { margin-bottom: 15px; }
-        label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
+        .form-group { margin-bottom: 12px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        input, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
         
         button {
             width: 100%;
@@ -124,37 +118,33 @@
             border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 10px;
+            transition: 0.2s;
         }
-
         button:hover { background-color: var(--primary-dark); }
         button:disabled { background-color: #94a3b8; cursor: not-allowed; }
 
         #sync-btn {
             width: auto;
-            padding: 8px 16px;
-            margin-top: 0;
+            padding: 6px 12px;
             background-color: #64748b;
-            font-size: 13px;
+            font-size: 12px;
         }
-        #sync-btn:hover { background-color: #475569; }
 
         .message {
-            margin-top: 15px;
-            padding: 12px;
+            margin-top: 10px;
+            padding: 10px;
             border-radius: 6px;
             display: none;
-            font-size: 14px;
+            font-size: 13px;
             text-align: center;
         }
 
         .error { background-color: #fee2e2; color: #991b1b; display: block; border: 1px solid #fecaca; }
         .success { background-color: #dcfce7; color: #166534; display: block; border: 1px solid #bbf7d0; }
 
-        .legend { display: flex; gap: 15px; font-size: 13px; }
-        .legend-item { display: flex; align-items: center; gap: 5px; }
-        .dot { width: 12px; height: 12px; border-radius: 3px; }
+        .legend { display: flex; gap: 10px; font-size: 12px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .dot { width: 10px; height: 10px; border-radius: 2px; }
     </style>
 </head>
 <body>
@@ -162,14 +152,13 @@
 <div class="container">
     <header>
         <h1>Maker Lab 회의실 예약</h1>
-        <p>효율적인 협업을 위한 메이커랩 공간 예약 시스템</p>
     </header>
 
     <div class="main-layout">
         <div class="card">
             <div class="calendar-header">
                 <div>
-                    <h3 id="current-week-range" style="margin-bottom: 5px;">이번 주 예약 현황</h3>
+                    <h3 style="margin:0 0 5px 0;">이번 주 예약 현황</h3>
                     <button id="sync-btn" onclick="fetchReservations()">🔄 시트 데이터 불러오기</button>
                 </div>
                 <div class="legend">
@@ -181,32 +170,32 @@
         </div>
 
         <div class="card">
-            <h3>예약하기</h3>
+            <h3>예약 신청</h3>
             <form id="reservation-form">
                 <div class="form-group">
-                    <label for="user-name">예약자명</label>
-                    <input type="text" id="user-name" placeholder="이름을 입력하세요" required>
+                    <label>예약자명</label>
+                    <input type="text" id="user-name" placeholder="이름 입력" required>
                 </div>
                 <div class="form-group">
-                    <label for="room-select">회의실 선택</label>
+                    <label>회의실</label>
                     <select id="room-select" required>
                         <option value="1호실">1호실</option>
                         <option value="2호실">2호실</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="res-date">날짜 선택</label>
+                    <label>날짜</label>
                     <input type="date" id="res-date" required>
                 </div>
                 <div class="form-group">
-                    <label for="start-time">시작 시간</label>
+                    <label>시작 시간</label>
                     <select id="start-time" required></select>
                 </div>
                 <div class="form-group">
-                    <label for="end-time">종료 시간</label>
+                    <label>종료 시간</label>
                     <select id="end-time" required></select>
                 </div>
-                <button type="submit" id="submit-btn">예약 신청</button>
+                <button type="submit" id="submit-btn">예약하기</button>
             </form>
             <div id="status-msg" class="message"></div>
         </div>
@@ -229,15 +218,6 @@
     const today = new Date();
     today.setHours(0,0,0,0);
     
-    function getLimitDate() {
-        const d = new Date(today);
-        const day = d.getDay(); 
-        const offset = (5 - day + 7) % 7 + 7;
-        d.setDate(d.getDate() + offset);
-        return d;
-    }
-    const maxDate = getLimitDate();
-
     window.onload = () => {
         setupForm();
         renderCalendar();
@@ -248,7 +228,11 @@
     function setupForm() {
         const dateInput = document.getElementById('res-date');
         dateInput.min = getLocalDateString(today);
-        dateInput.max = getLocalDateString(maxDate);
+        
+        const limit = new Date(today);
+        const offset = (5 - today.getDay() + 7) % 7 + 7;
+        limit.setDate(today.getDate() + offset);
+        dateInput.max = getLocalDateString(limit);
 
         const startSelect = document.getElementById('start-time');
         const endSelect = document.getElementById('end-time');
@@ -268,10 +252,10 @@
         grid.innerHTML = '';
         grid.appendChild(createCell('', 'cell-header'));
 
-        const weekDates = [];
         const sun = new Date(today);
         sun.setDate(today.getDate() - today.getDay());
 
+        const weekDates = [];
         for (let i = 0; i < 7; i++) {
             const d = new Date(sun);
             d.setDate(sun.getDate() + i);
@@ -300,56 +284,45 @@
     }
 
     function loadLocalData() {
-        const data = localStorage.getItem('mlab_res_cache');
+        const data = localStorage.getItem('mlab_final_cache');
         if (data) {
-            try {
-                reservations = JSON.parse(data);
-                updateUI();
-            } catch(e) { reservations = []; }
+            try { reservations = JSON.parse(data); updateUI(); } catch(e) {}
         }
     }
 
     async function fetchReservations() {
         const btn = document.getElementById('sync-btn');
-        const originalText = btn.innerText;
+        const originalTxt = btn.innerText;
+        btn.innerText = '⏳ 불러오는 중...';
         try {
-            btn.disabled = true;
-            btn.innerText = '⏳ 동기화 중...';
-
             const response = await fetch(`${API_URL}?t=${Date.now()}`);
-            if (!response.ok) throw new Error('Network error');
-            
             const data = await response.json();
-            if (data.error) throw new Error(data.error);
-
             if (Array.isArray(data)) {
                 reservations = data;
-                localStorage.setItem('mlab_res_cache', JSON.stringify(reservations));
+                localStorage.setItem('mlab_final_cache', JSON.stringify(reservations));
                 updateUI();
-                showMsg('데이터를 성공적으로 불러왔습니다.', 'success');
+                showMsg('동기화 완료!', 'success');
             }
         } catch (err) {
             console.error('Fetch error:', err);
-            showMsg('동기화 실패: GAS 배포 권한(Anyone) 및 승인 여부를 확인하세요.', 'error');
+            showMsg('동기화 실패. GAS 설정을 확인하세요.', 'error');
         } finally {
-            btn.disabled = false;
-            btn.innerText = originalText;
+            btn.innerText = originalTxt;
         }
     }
 
     function updateUI() {
         document.querySelectorAll('.reservation-block').forEach(el => el.remove());
-
         reservations.forEach(res => {
-            // 시간 데이터에서 '시(Hour)' 추출 (09:00 -> 9)
+            if (!res.startTime || !res.date) return;
             const h = parseInt(res.startTime.split(':')[0]);
-            const cell = document.getElementById(`cell-${res.date}-${h}`);
+            const cleanDate = res.date.split('T')[0]; 
+            const cell = document.getElementById(`cell-${cleanDate}-${h}`);
             
             if (cell) {
                 const block = document.createElement('div');
                 block.className = `reservation-block ${res.room.includes('1') ? 'room1-block' : 'room2-block'}`;
-                block.innerText = `${res.room.replace('호실','')}:${res.name}`;
-                block.title = `${res.name} (${res.startTime}~${res.endTime})`;
+                block.innerText = `${res.room.replace('호실','')}: ${res.name}`;
                 cell.appendChild(block);
             }
         });
@@ -358,7 +331,6 @@
     document.getElementById('reservation-form').onsubmit = async (e) => {
         e.preventDefault();
         const btn = document.getElementById('submit-btn');
-        
         const resData = {
             name: document.getElementById('user-name').value,
             room: document.getElementById('room-select').value,
@@ -382,26 +354,16 @@
         try {
             btn.disabled = true;
             btn.innerText = '전송 중...';
-
-            await fetch(API_URL, {
-                method: 'POST',
-                mode: 'no-cors',
-                body: JSON.stringify(resData)
-            });
-
-            showMsg('예약이 신청되었습니다. 잠시 후 동기화됩니다.', 'success');
-            
-            setTimeout(() => {
-                fetchReservations();
-                document.getElementById('reservation-form').reset();
-                setupForm();
-            }, 2500);
-
+            await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(resData) });
+            showMsg('예약 신청 완료!', 'success');
+            setTimeout(fetchReservations, 2500);
+            document.getElementById('reservation-form').reset();
+            setupForm();
         } catch (err) {
-            showMsg('오류가 발생했습니다.', 'error');
+            showMsg('전송 오류', 'error');
         } finally {
             btn.disabled = false;
-            btn.innerText = '예약 신청';
+            btn.innerText = '예약하기';
         }
     };
 
@@ -410,7 +372,7 @@
         el.innerText = m;
         el.className = `message ${t}`;
         el.style.display = 'block';
-        setTimeout(() => el.style.display = 'none', 5000);
+        setTimeout(() => el.style.display = 'none', 4000);
     }
 </script>
 
