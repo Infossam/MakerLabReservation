@@ -18,7 +18,6 @@
         
         .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid var(--border); }
         
-        /* 네비게이션 스타일 */
         .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
         .nav-controls { display: flex; align-items: center; gap: 10px; }
         .week-btn { background: #f1f5f9; border: 1px solid var(--border); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
@@ -55,9 +54,9 @@
         <div class="card">
             <div class="calendar-header">
                 <div class="nav-controls">
-                    <button class="week-btn" onclick="changeWeek(-7)">◀ 지난주</button>
+                    <button type="button" class="week-btn" id="prev-btn">◀ 지난주</button>
                     <span id="week-display">주차 로딩 중...</span>
-                    <button class="week-btn" onclick="changeWeek(7)">다음주 ▶</button>
+                    <button type="button" class="week-btn" id="next-btn">다음주 ▶</button>
                 </div>
                 <div style="text-align: right;">
                     <div class="legend">
@@ -93,28 +92,150 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbxgOIuOqu3s8KMW5A3Ejzc4SCQA_QgJjwkutKLUABHhS6GPg_GA7zc8iBtHA3RxIsN2/exec";
     let reservations = [];
     const businessHours = { start: 9, end: 20 };
-    
-    // 현재 보고 있는 기준 날짜 (기본값: 오늘)
     let currentViewDate = new Date();
     currentViewDate.setHours(0,0,0,0);
 
     function getLocalDateString(date) {
-        return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0');
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+    }
+
+    function changeWeek(days) {
+        currentViewDate.setDate(currentViewDate.getDate() + days);
+        renderCalendar();
+    }
+
+    function setupForm() {
+        const today = new Date();
+        const dateInput = document.getElementById('res-date');
+        if(dateInput) dateInput.min = getLocalDateString(today);
+        
+        const startSelect = document.getElementById('start-time');
+        const endSelect = document.getElementById('end-time');
+        if(!startSelect || !endSelect) return;
+
+        startSelect.innerHTML = ''; endSelect.innerHTML = '';
+        for (let i = businessHours.start; i < businessHours.end; i++) {
+            const t = String(i).padStart(2, '0') + ":00";
+            startSelect.innerHTML += `<option value="${t}">${t}</option>`;
+            const et = String(i+1).padStart(2, '0') + ":00";
+            endSelect.innerHTML += `<option value="${et}">${et}</option>`;
+        }
+    }
+
+    function renderCalendar() {
+        const grid = document.getElementById('calendar-grid');
+        if(!grid) return;
+        grid.innerHTML = '<div class="cell-header"></div>';
+        
+        const sun = new Date(currentViewDate);
+        sun.setDate(currentViewDate.getDate() - currentViewDate.getDay());
+        
+        const weekDates = [];
+        for (let i = 0; i < 7; i++) {
+            const d = new Date(sun);
+            d.setDate(sun.getDate() + i);
+            weekDates.push(d);
+            const header = document.createElement('div');
+            header.className = 'cell-header';
+            header.innerText = (d.getMonth()+1) + "/" + d.getDate() + "(" + ['일','월','화','수','목','금','토'][d.getDay()] + ")";
+            grid.appendChild(header);
+        }
+
+        const sat = new Date(sun); sat.setDate(sun.getDate() + 6);
+        document.getElementById('week-display').innerText = getLocalDateString(sun) + " ~ " + getLocalDateString(sat);
+
+        for (let h = businessHours.start; h < businessHours.end; h++) {
+            const timeCol = document.createElement('div');
+            timeCol.className = 'time-col';
+            timeCol.innerText = String(h).padStart(2, '0') + ":00";
+            grid.appendChild(timeCol);
+            for (let i = 0; i < 7; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'calendar-cell';
+                cell.id = "cell-" + getLocalDateString(weekDates[i]) + "-" + h;
+                grid.appendChild(cell);
+            }
+        }
+        updateUI();
+    }
+
+    async function fetchReservations() {
+        const btn = document.getElementById('sync-btn');
+        if(!btn) return;
+        const originalTxt = btn.innerText;
+        btn.innerText = '⏳ 불러오는 중...';
+        try {
+            const response = await fetch(API_URL + "?t=" + Date.now());
+            const data = await response.json();
+            if (Array.isArray(data)) {
+                reservations = data;
+                updateUI();
+                showMsg('동기화 완료', 'success');
+            }
+        } catch (err) {
+            console.error(err);
+            showMsg('데이터 동기화 실패', 'error');
+        } finally {
+            btn.innerText = originalTxt;
+        }
+    }
+
+    function updateUI() {
+        document.querySelectorAll('.reservation-block').forEach(el => el.remove());
+        reservations.forEach(res => {
+            if (!res.startTime || !res.date) return;
+            const h = parseInt(res.startTime.split(':')[0]);
+            const cell = document.getElementById("cell-" + res.date + "-" + h);
+            if (cell) {
+                const block = document.createElement('div');
+                block.className = "reservation-block " + (res.room.includes('1') ? 'room1-block' : 'room2-block');
+                block.innerText = res.room.replace('호실','') + ": " + res.name;
+                cell.appendChild(block);
+            }
+        });
+    }
+
+    function showMsg(m, t) {
+        const el = document.getElementById('status-msg');
+        if(!el) return;
+        el.innerText = m; el.className = "message " + t; el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 4000);
     }
 
     window.onload = () => {
         setupForm();
         renderCalendar();
         fetchReservations();
-    };
 
-    function setupForm() {
-        const today = new Date();
-        const dateInput = document.getElementById('res-date');
-        dateInput.min = getLocalDateString(today);
-        
-        const startSelect = document.getElementById('start-time');
-        const endSelect = document.getElementById('end-time');
-        startSelect.innerHTML = ''; endSelect.innerHTML = '';
-        for (let i = businessHours.start; i < businessHours.end; i++) {
-            const t = String(i).padStart(2, '0
+        document.getElementById('prev-btn').addEventListener('click', () => changeWeek(-7));
+        document.getElementById('next-btn').addEventListener('click', () => changeWeek(7));
+
+        document.getElementById('reservation-form').onsubmit = async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const resData = {
+                name: document.getElementById('user-name').value,
+                room: document.getElementById('room-select').value,
+                date: document.getElementById('res-date').value,
+                startTime: document.getElementById('start-time').value,
+                endTime: document.getElementById('end-time').value,
+                timestamp: new Date().toLocaleString('ko-KR')
+            };
+            try {
+                btn.disabled = true;
+                await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(resData) });
+                showMsg('예약 신청 완료!', 'success');
+                setTimeout(fetchReservations, 2500);
+                document.getElementById('reservation-form').reset();
+                setupForm();
+            } catch (err) {
+                showMsg('전송 오류', 'error');
+            } finally { btn.disabled = false; }
+        };
+    };
+</script>
+</body>
+</html>
