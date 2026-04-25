@@ -15,24 +15,35 @@
         header { text-align: center; margin-bottom: 20px; }
         .main-layout { display: grid; grid-template-columns: 1fr 320px; gap: 15px; }
         @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+        
         .card { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: 1px solid var(--border); }
-        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        
+        /* 네비게이션 스타일 */
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .nav-controls { display: flex; align-items: center; gap: 10px; }
+        .week-btn { background: #f1f5f9; border: 1px solid var(--border); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .week-btn:hover { background: #e2e8f0; }
+        #week-display { font-weight: bold; font-size: 14px; min-width: 180px; text-align: center; }
+
         .calendar-grid { display: grid; grid-template-columns: 60px repeat(7, 1fr); border: 1px solid var(--border); background: #eee; gap: 1px; }
         .calendar-cell { background: white; min-height: 85px; padding: 4px; font-size: 11px; position: relative; }
         .cell-header { background: #f1f5f9; font-weight: bold; text-align: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
         .time-col { background: #f1f5f9; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+        
         .reservation-block { border-radius: 4px; padding: 4px 6px; margin-bottom: 3px; font-size: 11px; font-weight: 800; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border-left: 3px solid transparent; }
         .room1-block { background-color: var(--room1); color: var(--room1-text); border-left-color: var(--primary); }
         .room2-block { background-color: var(--room2); color: var(--room2-text); border-left-color: #22c55e; }
+        
         .form-group { margin-bottom: 12px; }
         label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; }
         input, select { width: 100%; padding: 8px; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background-color: var(--primary); color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-        #sync-btn { width: auto; padding: 6px 12px; background-color: #64748b; font-size: 12px; }
+        #sync-btn { width: auto; padding: 6px 12px; background-color: #64748b; font-size: 12px; margin-top: 5px; }
+        
         .message { margin-top: 10px; padding: 10px; border-radius: 6px; display: none; font-size: 13px; text-align: center; }
         .error { background-color: #fee2e2; color: #991b1b; display: block; }
         .success { background-color: #dcfce7; color: #166534; display: block; }
-        .legend { display: flex; gap: 10px; font-size: 12px; }
+        .legend { display: flex; gap: 10px; font-size: 12px; margin-top: 5px; }
         .legend-item { display: flex; align-items: center; gap: 4px; }
         .dot { width: 10px; height: 10px; border-radius: 2px; }
     </style>
@@ -43,13 +54,17 @@
     <div class="main-layout">
         <div class="card">
             <div class="calendar-header">
-                <div>
-                    <h3 style="margin:0 0 5px 0;">이번 주 예약 현황</h3>
-                    <button id="sync-btn" onclick="fetchReservations()">🔄 시트 데이터 불러오기</button>
+                <div class="nav-controls">
+                    <button class="week-btn" onclick="changeWeek(-7)">◀ 지난주</button>
+                    <span id="week-display">주차 로딩 중...</span>
+                    <button class="week-btn" onclick="changeWeek(7)">다음주 ▶</button>
                 </div>
-                <div class="legend">
-                    <div class="legend-item"><div class="dot" style="background: var(--primary)"></div>1호실</div>
-                    <div class="legend-item"><div class="dot" style="background: #22c55e"></div>2호실</div>
+                <div style="text-align: right;">
+                    <div class="legend">
+                        <div class="legend-item"><div class="dot" style="background: var(--primary)"></div>1호실</div>
+                        <div class="legend-item"><div class="dot" style="background: #22c55e"></div>2호실</div>
+                    </div>
+                    <button id="sync-btn" onclick="fetchReservations()">🔄 시트 데이터 불러오기</button>
                 </div>
             </div>
             <div id="calendar-grid" class="calendar-grid"></div>
@@ -57,10 +72,7 @@
         <div class="card">
             <h3>예약 신청</h3>
             <form id="reservation-form">
-                <div class="form-group">
-                    <label for="user-name">예약자명</label>
-                    <input type="text" id="user-name" placeholder="이름 입력" required>
-                </div>
+                <div class="form-group"><label for="user-name">예약자명</label><input type="text" id="user-name" placeholder="이름 입력" required></div>
                 <div class="form-group">
                     <label for="room-select">회의실</label>
                     <select id="room-select" required>
@@ -68,18 +80,9 @@
                         <option value="2호실">2호실</option>
                     </select>
                 </div>
-                <div class="form-group">
-                    <label for="res-date">날짜</label>
-                    <input type="date" id="res-date" required>
-                </div>
-                <div class="form-group">
-                    <label for="start-time">시작 시간</label>
-                    <select id="start-time" required></select>
-                </div>
-                <div class="form-group">
-                    <label for="end-time">종료 시간</label>
-                    <select id="end-time" required></select>
-                </div>
+                <div class="form-group"><label for="res-date">날짜</label><input type="date" id="res-date" required></div>
+                <div class="form-group"><label for="start-time">시작 시간</label><select id="start-time" required></select></div>
+                <div class="form-group"><label for="end-time">종료 시간</label><select id="end-time" required></select></div>
                 <button type="submit" id="submit-btn">예약하기</button>
             </form>
             <div id="status-msg" class="message"></div>
@@ -90,13 +93,14 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbxgOIuOqu3s8KMW5A3Ejzc4SCQA_QgJjwkutKLUABHhS6GPg_GA7zc8iBtHA3RxIsN2/exec";
     let reservations = [];
     const businessHours = { start: 9, end: 20 };
+    
+    // 현재 보고 있는 기준 날짜 (기본값: 오늘)
+    let currentViewDate = new Date();
+    currentViewDate.setHours(0,0,0,0);
 
     function getLocalDateString(date) {
         return date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, '0') + "-" + String(date.getDate()).padStart(2, '0');
     }
-
-    const today = new Date();
-    today.setHours(0,0,0,0);
 
     window.onload = () => {
         setupForm();
@@ -105,108 +109,12 @@
     };
 
     function setupForm() {
+        const today = new Date();
         const dateInput = document.getElementById('res-date');
         dateInput.min = getLocalDateString(today);
+        
         const startSelect = document.getElementById('start-time');
         const endSelect = document.getElementById('end-time');
+        startSelect.innerHTML = ''; endSelect.innerHTML = '';
         for (let i = businessHours.start; i < businessHours.end; i++) {
-            const t = String(i).padStart(2, '0') + ":00";
-            startSelect.innerHTML += `<option value="${t}">${t}</option>`;
-            const et = String(i+1).padStart(2, '0') + ":00";
-            endSelect.innerHTML += `<option value="${et}">${et}</option>`;
-        }
-    }
-
-    function renderCalendar() {
-        const grid = document.getElementById('calendar-grid');
-        grid.innerHTML = '<div class="cell-header"></div>';
-        const sun = new Date(today);
-        sun.setDate(today.getDate() - today.getDay());
-        const weekDates = [];
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(sun);
-            d.setDate(sun.getDate() + i);
-            weekDates.push(d);
-            const header = document.createElement('div');
-            header.className = 'cell-header';
-            header.innerText = (d.getMonth()+1) + "/" + d.getDate() + "(" + ['일','월','화','수','목','금','토'][d.getDay()] + ")";
-            grid.appendChild(header);
-        }
-        for (let h = businessHours.start; h < businessHours.end; h++) {
-            const timeCol = document.createElement('div');
-            timeCol.className = 'time-col';
-            timeCol.innerText = String(h).padStart(2, '0') + ":00";
-            grid.appendChild(timeCol);
-            for (let i = 0; i < 7; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'calendar-cell';
-                cell.id = "cell-" + getLocalDateString(weekDates[i]) + "-" + h;
-                grid.appendChild(cell);
-            }
-        }
-    }
-
-    async function fetchReservations() {
-        const btn = document.getElementById('sync-btn');
-        btn.innerText = '⏳ 불러오는 중...';
-        try {
-            const response = await fetch(API_URL + "?t=" + Date.now());
-            const data = await response.json();
-            if (Array.isArray(data)) {
-                reservations = data;
-                updateUI();
-                showMsg('동기화 완료', 'success');
-            }
-        } catch (err) {
-            console.error(err);
-            showMsg('데이터를 불러오지 못했습니다.', 'error');
-        } finally {
-            btn.innerText = '🔄 시트 데이터 불러오기';
-        }
-    }
-
-    function updateUI() {
-        document.querySelectorAll('.reservation-block').forEach(el => el.remove());
-        reservations.forEach(res => {
-            if (!res.startTime || !res.date) return;
-            const h = parseInt(res.startTime.split(':')[0]);
-            const cell = document.getElementById("cell-" + res.date + "-" + h);
-            if (cell) {
-                const block = document.createElement('div');
-                block.className = "reservation-block " + (res.room.includes('1') ? 'room1-block' : 'room2-block');
-                block.innerText = res.room.replace('호실','') + ": " + res.name;
-                cell.appendChild(block);
-            }
-        });
-    }
-
-    document.getElementById('reservation-form').onsubmit = async (e) => {
-        e.preventDefault();
-        const btn = document.getElementById('submit-btn');
-        const resData = {
-            name: document.getElementById('user-name').value,
-            room: document.getElementById('room-select').value,
-            date: document.getElementById('res-date').value,
-            startTime: document.getElementById('start-time').value,
-            endTime: document.getElementById('end-time').value,
-            timestamp: new Date().toLocaleString('ko-KR')
-        };
-        try {
-            btn.disabled = true;
-            await fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(resData) });
-            showMsg('예약 신청 완료!', 'success');
-            setTimeout(fetchReservations, 2000);
-            document.getElementById('reservation-form').reset();
-        } catch (err) {
-            showMsg('전송 오류', 'error');
-        } finally { btn.disabled = false; }
-    };
-
-    function showMsg(m, t) {
-        const el = document.getElementById('status-msg');
-        el.innerText = m; el.className = "message " + t; el.style.display = 'block';
-        setTimeout(() => el.style.display = 'none', 4000);
-    }
-</script>
-</body>
-</html>
+            const t = String(i).padStart(2, '0
